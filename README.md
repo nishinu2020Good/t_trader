@@ -31,4 +31,3 @@ python t_trader.py
 
 - `feishu_config.json` 包含飞书webhook密钥，不提交到版本库
 - 交易记录 `trades.csv` 为本地私密文件
-# test auto push
