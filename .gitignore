@@ -1,0 +1,20 @@
+# 密钥配置
+feishu_config.json
+
+# 交易记录（私密）
+trades.csv
+*.csv
+
+# 截图
+*.png
+*.jpg
+
+# 临时文件
+*.log
+*.json
+!package.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/

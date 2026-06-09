@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T-Trader Pro | 做T量化助手</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #060d14; color: #c8d6e5;
+    font-family: 'Rajdhani', sans-serif; min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 30% 20%, rgba(0,180,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 60%, rgba(0,255,180,0.03) 0%, transparent 60%);
+  }
+
+  .header {
+    padding: 20px 40px; border-bottom: 1px solid rgba(0,200,255,0.12);
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(6,13,20,0.9); backdrop-filter: blur(10px);
+    position: sticky; top:0; z-index:100;
+  }
+  .header h1 {
+    font-family: 'Orbitron', monospace; font-size: 20px; letter-spacing: 2px;
+    background: linear-gradient(135deg, #00d4ff, #00ff88);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header .badge {
+    font-size: 10px; color: #00ff88; border: 1px solid rgba(0,255,136,0.3);
+    padding: 3px 10px; border-radius: 2px; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .header .trading-badge {
+    font-size: 10px; padding: 3px 10px; border-radius: 2px; letter-spacing: 1px;
+  }
+  .trading-badge.open { color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+  .trading-badge.closed { color: #ff6644; border: 1px solid rgba(255,100,68,0.3); }
+  .header .time {
+    margin-left: auto; font-family: 'Orbitron', monospace;
+    font-size: 12px; color: #5a7a9a;
+  }
+  .header .source {
+    font-size: 10px; color: #3a5a7a; margin-left: 4px;
+  }
+
+  .container { max-width: 1440px; margin: 0 auto; padding: 20px 40px; }
+
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: rgba(10,20,35,0.8); border: 1px solid rgba(0,200,255,0.1);
+    border-radius: 6px; padding: 16px 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top:0; left:0; width:3px; height:100%;
+  }
+  .stat-card:nth-child(1)::before { background: linear-gradient(180deg, #00d4ff, transparent); }
+  .stat-card:nth-child(2)::before { background: linear-gradient(180deg, #00ff88, transparent); }
+  .stat-card:nth-child(3)::before { background: linear-gradient(180deg, #ffaa00, transparent); }
+  .stat-card:nth-child(4)::before { background: linear-gradient(180deg, #ff6644, transparent); }
+  .stat-card:nth-child(5)::before { background: linear-gradient(180deg, #aa66ff, transparent); }
+  .stat-card .label { font-size: 11px; color: #5a7a9a; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: #e8f0f8; margin-top: 2px; }
+  .stat-card .sub { font-size: 11px; color: #5a7a9a; margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 8px 16px; border: 1px solid rgba(0,200,255,0.2);
+    background: rgba(0,200,255,0.05); color: #7ab0c8;
+    font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; border-radius: 3px; letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: rgba(0,200,255,0.12); border-color: rgba(0,200,255,0.4); color: #00d4ff; }
+  .btn.active { background: rgba(0,200,255,0.15); border-color: #00d4ff; color: #00d4ff; }
+  .btn.refresh { border-color: rgba(0,255,136,0.3); color: #00ff88; margin-left: auto; }
+  .btn.refresh:hover { background: rgba(0,255,136,0.1); }
+
+  .search-box { margin-bottom: 14px; }
+  .search-box input {
+    padding: 10px 16px; background: rgba(10,20,35,0.8);
+    border: 1px solid rgba(0,200,255,0.2); border-radius: 4px;
+    color: #e8f0f8; font-family: 'Rajdhani', sans-serif; font-size: 14px;
+    width: 280px; outline: none;
+  }
+  .search-box input:focus { border-color: #00d4ff; }
+  .search-box input::placeholder { color: #3a5a7a; }
+
+  .table-wrap {
+    background: rgba(10,20,35,0.7); border: 1px solid rgba(0,200,255,0.1);
+    border-radius: 8px; overflow: hidden; margin-bottom: 24px;
+  }
+  .table-wrap h2 {
+    padding: 14px 20px; font-size: 13px; letter-spacing: 2px;
+    color: #00d4ff; border-bottom: 1px solid rgba(0,200,255,0.1);
+    font-family: 'Orbitron', monospace; display: flex; align-items: center; gap: 10px;
+  }
+  .dot { width:6px; height:6px; background:#00ff88; border-radius:50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+
+  table { width:100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; padding: 11px 14px; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: #5a7a9a; border-bottom: 1px solid rgba(0,200,255,0.08);
+    background: rgba(0,0,0,0.2);
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(0,200,255,0.04); }
+  tr:hover td { background: rgba(0,200,255,0.03); }
+
+  .stock-name { color: #e8f0f8; font-weight: 600; font-size: 14px; }
+  .stock-code { color: #5a7a9a; font-size: 11px; margin-left: 4px; }
+  .price { font-weight: 700; color: #e8f0f8; font-size: 15px; }
+  .up { color: #ff4466; }
+  .down { color: #00ff88; }
+
+  .score-visual {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .score-track { width: 100px; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .score-fill.high { background: linear-gradient(90deg, #00ff88, #00d4ff); }
+  .score-fill.mid { background: linear-gradient(90deg, #ffaa00, #ffcc00); }
+  .score-fill.low { background: linear-gradient(90deg, #ff6644, #ff8866); }
+  .score-num { font-weight: 700; font-size: 13px; min-width: 35px; }
+  .score-num.high { color: #00ff88; }
+  .score-num.mid { color: #ffcc00; }
+  .score-num.low { color: #ff8866; }
+
+  .tag {
+    display: inline-block; padding: 2px 7px; border-radius: 2px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.5px; margin: 1px;
+  }
+  .tag-buy { background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); }
+  .tag-hold { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); }
+  .tag-warn { background: rgba(255,200,0,0.1); color: #ffcc00; border: 1px solid rgba(255,200,0,0.2); }
+  .tag-concept { background: rgba(170,102,255,0.08); color: #9966dd; border: 1px solid rgba(170,102,255,0.15); font-size: 9px; }
+
+  .footer { text-align:center; padding:20px; color:#3a5a7a; font-size:11px;
+    border-top:1px solid rgba(0,200,255,0.06); margin-top:20px; }
+  .footer span { margin: 0 12px; }
+
+  .loading, .empty { text-align:center; padding:40px; color:#5a7a9a; font-size:14px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>T-TRADER PRO</h1>
+  <span class="badge">QUANT</span>
+  <span class="trading-badge open" id="tradeBadge">--</span>
+  <span class="source">adata + Tencent</span>
+  <span class="time" id="clock">--</span>
+</div>
+
+<div class="container">
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="label">候选股数</div>
+      <div class="value" id="statTotal" style="color:#00d4ff;">--</div>
+      <div class="sub">符合做T条件</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">今日最佳</div>
+      <div class="value" id="statBest" style="color:#00ff88;font-size:20px;">--</div>
+      <div class="sub">综合评分最高</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">平均振幅</div>
+      <div class="value" id="statAmp" style="color:#ffaa00;">--</div>
+      <div class="sub">候选股均值</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">2000元最大手数</div>
+      <div class="value" id="statMaxLots" style="color:#ff6644;">--</div>
+      <div class="sub" id="statMaxLotsStock">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">数据源</div>
+      <div class="value" style="font-size:15px;color:#aa66ff;">adata+腾讯</div>
+      <div class="sub" id="statTime">--</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn active" onclick="setFilter(3)">全部 (振≥3%)</button>
+    <button class="btn" onclick="setFilter(8)">高振幅 (≥8%)</button>
+    <button class="btn" onclick="setFilter(5)">中振幅 (≥5%)</button>
+    <button class="btn" onclick="setFilter(10)">高换手 (≥10%)</button>
+    <button class="btn refresh" onclick="loadData()">⟳ 刷新</button>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜索代码或名称..." oninput="doSearch()">
+  </div>
+
+  <div class="table-wrap">
+    <h2><span class="dot"></span>做T候选排名</h2>
+    <div id="tableContainer"><div class="loading">加载中...</div></div>
+  </div>
+
+  <div class="footer">
+    <span>T-Trader Pro v2.0</span>
+    <span>|</span>
+    <span>数据: adata (股票库/日历) + 腾讯财经 (实时行情)</span>
+    <span>|</span>
+    <span>仅供参考 不构成投资建议</span>
+  </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:9051/?codes=';
+let allStocks = [], filterAmp = 3, filterTurnover = 0;
+
+function fmt(n, d=2) { return (n != null && !isNaN(n)) ? Number(n).toFixed(d) : '--'; }
+function fmtVol(n) {
+  if (!n || n==0) return '--';
+  if (n > 1e8) return (n/1e8).toFixed(1)+'亿';
+  if (n > 1e4) return (n/1e4).toFixed(0)+'万';
+  return n.toFixed(0);
+}
+
+function renderTable(stocks) {
+  if (!stocks.length) {
+    document.getElementById('tableContainer').innerHTML = '<div class="empty">没有符合条件的股票（可能是非交易时段）</div>';
+    return;
+  }
+
+  let maxScore = Math.max(...stocks.map(s => s.score || 0), 1);
+  let avgAmp = stocks.reduce((a,b)=>a+b.amplitude,0) / stocks.length;
+  let maxLots = Math.max(...stocks.map(s => s.lots || 0));
+  let maxLotsStock = stocks.find(s => s.lots >= maxLots);
+
+  let html = '<table><thead><tr>';
+  ['#','股票','现价','涨跌','振幅','换手','成交额','概念','可买','评分','建议']
+    .forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+
+  stocks.forEach((s, i) => {
+    let sc = s.score || 0;
+    let scNorm = Math.round(sc / maxScore * 100);
+    let barW = Math.round(sc / maxScore * 120);
+
+    let tier = 'low', tierLabel = '观望';
+    if (scNorm >= 70) { tier = 'high'; tierLabel = '推荐'; }
+    else if (scNorm >= 45) { tier = 'mid'; tierLabel = '关注'; }
+
+    let sugClass = scNorm>=70 ? 'tag-buy' : (scNorm>=45 ? 'tag-hold' : 'tag-warn');
+
+    let concepts = (s.concepts || '').split(',');
+    let conceptTags = concepts.filter(c=>c.trim()).slice(0,2)
+      .map(c => `<span class="tag tag-concept">${c.trim()}</span>`).join('');
+
+    html += `<tr>
+      <td style="color:#5a7a9a;width:30px;">#${i+1}</td>
+      <td><span class="stock-name">${s.name}</span><span class="stock-code">${s.code}</span></td>
+      <td class="price">${fmt(s.price)}</td>
+      <td class="${s.change_pct>=0?'up':'down'}">${s.change_pct>=0?'+':''}${fmt(s.change_pct)}%</td>
+      <td><b style="color:${s.amplitude>=8?'#00ff88':s.amplitude>=5?'#ffaa00':'#c8d6e5'}">${fmt(s.amplitude)}%</b></td>
+      <td>${fmt(s.turnover)}%</td>
+      <td>${fmtVol(s.amount)}</td>
+      <td>${conceptTags || '--'}</td>
+      <td><b>${s.lots}手</b></td>
+      <td>
+        <div class="score-visual">
+          <div class="score-track"><div class="score-fill ${tier}" style="width:${barW}px;"></div></div>
+          <span class="score-num ${tier}">${scNorm}</span>
+        </div>
+      </td>
+      <td><span class="tag ${sugClass}">${tierLabel}</span></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('tableContainer').innerHTML = html;
+
+  document.getElementById('statTotal').textContent = stocks.length;
+  document.getElementById('statBest').textContent = stocks[0].name;
+  document.getElementById('statAmp').textContent = avgAmp.toFixed(1)+'%';
+  document.getElementById('statMaxLots').textContent = maxLots+'手';
+  document.getElementById('statMaxLotsStock').textContent = maxLotsStock ? maxLotsStock.name+' ¥'+maxLotsStock.price : '--';
+  document.getElementById('statTime').textContent = new Date().toLocaleTimeString('zh-CN');
+
+  // Trading day badge
+  let badge = document.getElementById('tradeBadge');
+  let td = stocks[0] && stocks[0].is_trading_day;
+  if (td) { badge.textContent = '交易日'; badge.className = 'trading-badge open'; }
+  else { badge.textContent = '休市/未知'; badge.className = 'trading-badge closed'; }
+}
+
+function doSearch() {
+  let q = (document.getElementById('searchInput').value || '').toLowerCase();
+  let filtered = allStocks.filter(s => s.amplitude >= filterAmp && s.turnover >= filterTurnover);
+  if (q) filtered = filtered.filter(s => s.code.includes(q) || (s.name||'').includes(q));
+  renderTable(filtered);
+}
+
+function setFilter(amp, turnover=0) {
+  filterAmp = amp; filterTurnover = turnover;
+  document.querySelectorAll('.toolbar .btn').forEach(b => b.classList.remove('active'));
+  let idx = amp===3 ? 0 : (amp===8 ? 1 : (amp===5 ? 2 : 3));
+  document.querySelectorAll('.toolbar .btn')[idx].classList.add('active');
+  doSearch();
+}
+
+async function loadData() {
+  document.getElementById('tableContainer').innerHTML = '<div class="loading">加载中...</div>';
+  try {
+    let resp = await fetch(API);
+    let data = await resp.json();
+    allStocks = data.filter(s =>
+      s.price >= 3 && s.price <= 18 && s.amplitude >= 3 && s.turnover >= 5 &&
+      !/ST|退|N/.test(s.name||'')
+    );
+    allStocks.sort((a,b) => (b.score||0) - (a.score||0));
+    doSearch();
+  } catch(e) {
+    document.getElementById('tableContainer').innerHTML =
+      '<div class="loading">连接失败 — 请确认 stock_proxy.py 已启动 (端口9051)</div>';
+  }
+}
+
+function tick() { document.getElementById('clock').textContent = new Date().toLocaleString('zh-CN'); }
+setInterval(tick, 1000); tick();
+setInterval(loadData, 60000);
+loadData();
+</script>
+</body>
+</html>
