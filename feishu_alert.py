@@ -1,5 +1,5 @@
 """
-华塑控股 000509 + 达实智能 002421 双股监控（每日自动驾驶）
+小T — 华塑控股 000509 + 达实智能 002421 双股自动驾驶
 用法: python feishu_alert.py
 """
 import json
@@ -41,6 +41,7 @@ STOCKS = {
 UNSUITABLE_TURNOVER = 3.0   # 换手<3%不适合做T
 UNSUITABLE_AMP = 3.0        # 振幅<3%不适合做T
 
+STATUS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "status.json")
 VOICE_SCRIPT = r"C:\Users\Administrator\Desktop\jarvis_say.py"
 
 
@@ -173,6 +174,29 @@ def main() -> None:
         if not data:
             time.sleep(5)
             continue
+
+        # Write status.json for dashboard
+        status_data = {"stocks": [], "market": ""}
+        for code, d in data.items():
+            cfg = STOCKS[code]
+            a = analyze_stock(code, cfg, d)
+            status_data["stocks"].append({
+                "name": cfg["name"],
+                "code": code,
+                "price": a["price"],
+                "chg": a["chg"],
+                "amp": a["amp"],
+                "turnover": a["turnover"],
+                "trend": a["trend"],
+                "flow": a["flow"],
+                "signal": "BUY" if a["in_buy_zone"] else "SELL" if a["above_sell"] else "SKIP" if a["unsuitable"] else "wait",
+                "time": now.strftime("%H:%M:%S"),
+            })
+        try:
+            with open(STATUS_PATH, "w", encoding="utf-8") as f:
+                json.dump(status_data, f, ensure_ascii=False)
+        except Exception:
+            pass
 
         # Console output (30s)
         if time.time() - last_print >= 30:
