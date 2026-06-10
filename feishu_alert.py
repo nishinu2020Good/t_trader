@@ -20,21 +20,12 @@ with open(CONFIG_PATH, encoding="utf-8") as f:
 STOCKS = {
     "sz000509": {
         "name": "华塑",
-        "cost": 4.44,          # 底仓有效成本
+        "cost": 4.60,          # 底仓成本 (200股@4.60)
         "buy_ref": 4.56,       # 每日更新: 昨收×0.95
-        "buy_zone": (4.50, 4.60),  # 买入区间
-        "sell_t": 4.70,        # T仓止盈
+        "buy_zone": (4.45, 4.60),  # 买入区间 (涨停次日回调)
+        "sell_t": 4.75,        # T仓止盈
         "base_hold": 200,      # 底仓
         "t_hold": 0,           # T仓
-    },
-    "sz002421": {
-        "name": "达实",
-        "cost": 0,
-        "buy_ref": 5.50,
-        "buy_zone": (5.45, 5.55),
-        "sell_t": 5.65,
-        "base_hold": 0,        # 还没有底仓
-        "t_hold": 0,
     },
 }
 
